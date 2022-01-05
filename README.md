@@ -4,7 +4,7 @@ definitions of Japanese words, kanji, and optionally named entities. It is
 similar to [yomichan](https://github.com/FooSoft/yomichan),
 [10ten](https://github.com/birchill/10ten-ja-reader), and
 [rikaikun](https://github.com/melink14/rikaikun) in spirit, but targets
-qutebrowser. Yomichad is here to help you master <ins>読み</ins>方 like a
+[qutebrowser](https://github.com/qutebrowser/qutebrowser). Yomichad is here to help you master <ins>読み</ins>方 like a
 <ins>chad</ins>!
 
 [Yomichad demonstration](https://user-images.githubusercontent.com/53401822/148242852-ba19e2f6-2a62-4808-bf10-8014336423d8.mp4)
