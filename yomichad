@@ -1,0 +1,264 @@
+#!/usr/bin/env python
+
+"""
+With this userscript you can query the readings and English definitions of
+Japanese words, kanji, and named entities. It is similar to yomichan,
+rikaichan, and rikaichamp in spirit, but targets qutebrowser.
+
+This script uses the selected text as a query, so make sure to select the
+phrase you want to look up before you run this script!
+
+A sample invocation of this script is:
+
+:spawn --userscript yomichad
+
+Analogously, a sample binding:
+
+:bind gs spawn --userscript yomichad --prefix-search
+
+--no-kanji prevents the lookup of individual kanji
+--names enables the lookup of Japanese names
+--prefix-search searches for words beginning with the search query
+
+Dependencies:
+    - jamdict, jamdict-data: Required to query Japanese databases, without
+      these this script won't work!
+    - python-xlib: This is optional, when installed this script attempts to
+      center the popup window inside qutebrowser.
+"""
+
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from collections import defaultdict
+from functools import cached_property
+from itertools import zip_longest
+from os import environ
+from shlex import quote
+from sys import argv
+
+from PyQt5.QtCore import QCoreApplication, QEvent, QRect, Qt
+from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QScrollArea, QVBoxLayout
+
+def qute_notify(message, level="info"):
+    if 'QUTE_FIFO' in environ:
+        with open(environ['QUTE_FIFO'], 'wb', buffering=0) as fifo:
+            fifo.write("message-{} {}".format(level, quote(message)).encode())
+
+try:
+    # Xlib is optional
+    from Xlib import display
+    xlib_available = True
+except ImportError:
+    xlib_available = False
+
+try:
+    from jamdict import Jamdict
+except ImportError as e:
+    # jamdict is required, so notify user when it is not installed
+    qute_notify("Failed to import 'jamdict', make sure to install it.", level="error")
+    raise e
+
+
+
+class MdDocument():
+    """
+    Helper class for writing simple markdown documents.
+    """
+    rule = "---"
+    italic = "*{}*"
+    bold = "**{}**"
+    bolditalic = "***{}***"
+
+    def __init__(self, *documents, separator=None):
+        self.document = list()
+
+        for document in documents:
+            if len(self.document) > 0 and len(document) > 0 and separator is not None:
+                self.document.append(separator)
+            self.document.extend(document)
+
+    def insert_header(self, text, level=1):
+        self.document.append("{} {}".format("#" * level, text))
+
+    def insert_list(self, items):
+        for item in items:
+            self.document.append("* {}".format(item))
+
+    def insert_line(self, line):
+        self.document.append(line)
+
+    def _insert_table_row(self, row):
+        self.document.append("| " + " | ".join(row) + " |")
+
+    def insert_table(self, headings, *columns, fillvalue="&nbsp;"):
+        self._insert_table_row(headings)
+        self._insert_table_row(["---"] * len(headings))
+
+        for row in zip_longest(*columns, fillvalue=fillvalue):
+            self._insert_table_row(row)
+        self.insert_line("")
+
+    def __str__(self):
+        return "\n".join(self.document).strip()
+
+    def __len__(self):
+        return len(self.document)
+
+    def __iter__(self):
+        for line in self.document:
+            yield line
+
+
+class JapDictSearch():
+    """
+    Search Japanese dictionaries for a given query. Results are formatted as
+    markdown.
+    """
+    _jam = Jamdict()
+
+    def __init__(self, query, search_kanji=True, search_names=False, prefix=False):
+        if prefix:
+            query = query + "%"
+        self._result = self._jam.lookup_iter(query, True, lookup_chars=search_kanji, lookup_ne=search_names)
+
+    @cached_property
+    def vocabulary(self):
+        document = MdDocument()
+        for entry in self._result.entries:
+            header = entry.kana_forms[0].text + (f" ({entry.kanji_forms[0].text})" if entry.kanji_forms else "")
+            document.insert_header(header)
+            for sense in entry.senses:
+                document.insert_header(", ".join(sense.pos), level=4)
+                document.insert_list(sense.gloss)
+
+        return document
+
+    @cached_property
+    def kanji(self):
+        document = MdDocument()
+        for char in self._result.chars:
+            document.insert_header(char.literal)
+            headings = ["Meaning", "Reading", "Statistics"]
+            stat_names = [document.bold.format(i) for i in ["Frequency", "Grade level", "JLPT level", "Stroke count"]]
+            stat_values = [char.freq, char.grade, char.jlpt, char.stroke_count]
+            statistics = [f"{name} {stat}" for name, stat in zip(stat_names, stat_values)]
+
+            meanings, readings = list(), list()
+            for group in char.rm_groups:
+                meanings.extend(meaning.value for meaning in group.meanings if meaning.m_lang in ["en", ""])
+                readings.extend(reading.value for reading in group.on_readings + group.kun_readings)
+
+            document.insert_table(headings, meanings, sorted(readings), statistics)
+
+        return document
+
+    @cached_property
+    def names(self):
+        document, names = MdDocument(), defaultdict(list)
+        for name in self._result.names:
+            if name.kanji_forms:
+                kanji, kana = name.kanji_forms[0].text, name.kana_forms[0].text
+                types = [type_ for sense in name.senses for type_ in sense.name_type]
+                names[kanji].append("{} {}".format(document.bold.format(kana), ', '.join(types)))
+
+        for kanji, readings in names.items():
+            document.insert_header(kanji)
+            document.insert_list(readings)
+        return document
+
+    @property
+    def info(self):
+        return MdDocument(self.vocabulary, self.kanji, self.names, separator=MdDocument.rule)
+
+    def __str__(self):
+        return str(self.info)
+
+class QutePopup(QDialog):
+    """
+    Show qutebrowser message inside a popup window.
+    """
+    def __init__(self, message):
+        super().__init__()
+        self.scroll, vbox, label = QScrollArea(), QVBoxLayout(self), QLabel(message)
+
+        label.setTextFormat(Qt.MarkdownText)
+        self.scroll.setWidget(label)
+        vbox.addWidget(self.scroll)
+
+        self.setWindowFlags(Qt.Popup)
+        self.resize(500, 300)
+        self.tryQuteCenter()
+        self.scroll.setFocus()
+        self.exec()
+
+    def tryQuteCenter(self):
+        """
+        Hacky workaround to center popup inside qutebrowser. Relies on
+        low-level Xlib library to query geometry of the focused window, which
+        should be qutebrowser. When Xlib is not available the popup is centered
+        on the screen (default).
+        """
+        if xlib_available:
+            self.move(self.quteGeometry.center() - self.rect().center())
+
+    # https://stackoverflow.com/a/59221890
+    @property
+    def quteGeometry(self):
+        """
+        Returns the geometry (x, y, width, height) of the focused window (which
+        should be qutebrowser), relative to the top-left of the screen.
+        """
+        disp = display.Display()
+        win, root = disp.get_input_focus().focus, disp.screen().root
+        geom = win.get_geometry()
+        x, y = geom.x, geom.y
+
+        while True:
+            parent = win.query_tree().parent
+            pgeom = parent.get_geometry()
+            x += pgeom.x
+            y += pgeom.y
+            if parent.id == root.id:
+                break
+            win = parent
+
+        return QRect(x, y, geom.width, geom.height)
+
+    def postKeyEvent(self, key):
+        QCoreApplication.postEvent(self.scroll, QKeyEvent(QEvent.KeyPress, key, Qt.NoModifier))
+
+    def keyPressEvent(self, event):
+        key, mods = event.key(), event.modifiers()
+        if key == Qt.Key_J:
+            self.postKeyEvent(Qt.Key_Down)
+        elif key == Qt.Key_K:
+            self.postKeyEvent(Qt.Key_Up)
+        elif mods == Qt.ControlModifier and key == Qt.Key_F:
+            self.postKeyEvent(Qt.Key_PageDown)
+        elif mods == Qt.ControlModifier and key == Qt.Key_B:
+            self.postKeyEvent(Qt.Key_PageUp)
+        elif key == Qt.Key_H:
+            self.postKeyEvent(Qt.Key_Left)
+        elif key == Qt.Key_L:
+            self.postKeyEvent(Qt.Key_Right)
+        super().keyPressEvent(event)
+
+if __name__ == "__main__":
+    argument_parser = ArgumentParser(description="Japanese pop-up dictionary.", epilog=__doc__,
+        formatter_class=RawDescriptionHelpFormatter)
+    argument_parser.add_argument("--no-kanji", dest="kanji", action="store_false", help="do not lookup kanji")
+    argument_parser.add_argument("--names", action="store_true", help="lookup Japanese names")
+    argument_parser.add_argument("--prefix-search", action="store_true",
+        help="search for words beginning with the search query")
+    args = argument_parser.parse_args()
+
+    query = environ.get("QUTE_SELECTED_TEXT")
+    if query:
+        message = str(JapDictSearch(query, args.kanji, args.names, args.prefix_search).info)
+        if message:
+            app = QApplication(argv)
+            QutePopup(message)
+        else:
+            qute_notify("No results found for query!", level="info")
+    else:
+        qute_notify("No text selected!", level="warning")

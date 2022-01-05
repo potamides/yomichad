@@ -1,0 +1,9 @@
+# required
+jamdict~=0.1a11.post2
+jamdict-data~=1.5
+
+# optional
+python-xlib~=0.31
+
+# already shipped with qutebrowser
+#PyQt5~=5.15.6
