@@ -1,11 +1,13 @@
 # Yomichad
 Yomichad is a Japanese pop-up dictionary that can display readings and English
 definitions of Japanese words, kanji, and optionally named entities. It is
-similar to [yomichan](https://foosoft.net/projects/yomichan/),
-[rikaichamp](https://addons.mozilla.org/en-US/firefox/addon/rikaichamp/), and
-[rikaikun](https://chrome.google.com/webstore/detail/rikaikun/jipdnfibhldikgcjhfnomkfpcebammhp)
-in spirit, but targets qutebrowser. Yomichad is here to help you master
-**読み**方 like a **chad**!
+similar to [yomichan](https://github.com/FooSoft/yomichan),
+[10ten](https://github.com/birchill/10ten-ja-reader), and
+[rikaikun](https://github.com/melink14/rikaikun) in spirit, but targets
+qutebrowser. Yomichad is here to help you master <ins>読み</ins>方 like a
+<ins>chad</ins>!
+
+[Yomichad demonstration](https://user-images.githubusercontent.com/53401822/148242852-ba19e2f6-2a62-4808-bf10-8014336423d8.mp4)
 
 ## Installation
 Yomichad must be installed as a qutebrowser
@@ -27,7 +29,7 @@ third-party libraries, so make sure they are installed:
   installed, the popup dictionary is simply centered on the screen.
 
 ## Usage
-First, some keybindings should be configured to launch yomichad from
+First, some keybindings should be configured for launching yomichad from
 qutebrowser. You can, for example, add the following lines to your
 `~/.config/qutebrowser/config.py`:
 ```python
