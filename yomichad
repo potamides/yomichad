@@ -117,8 +117,7 @@ class JapDictSearch():
     _jam = Jamdict()
 
     def __init__(self, query, search_kanji=True, search_names=False, prefix=False):
-        if prefix:
-            query = query + "%"
+        query = query.strip() + ("%" if prefix else "")
         self._result = self._jam.lookup_iter(query, True, lookup_chars=search_kanji, lookup_ne=search_names)
 
     @cached_property
