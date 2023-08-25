@@ -35,9 +35,14 @@ from os import environ
 from shlex import quote
 from sys import argv
 
-from PyQt5.QtCore import QCoreApplication, QEvent, QRect, Qt
-from PyQt5.QtGui import QKeyEvent
-from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QScrollArea, QVBoxLayout
+try:
+    from PyQt6.QtCore import QCoreApplication, QEvent, QRect, Qt
+    from PyQt6.QtGui import QKeyEvent
+    from PyQt6.QtWidgets import QApplication, QDialog, QLabel, QScrollArea, QVBoxLayout
+except ImportError:
+    from PyQt5.QtCore import QCoreApplication, QEvent, QRect, Qt
+    from PyQt5.QtGui import QKeyEvent
+    from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QScrollArea, QVBoxLayout
 
 def qute_notify(message, level="info"):
     if 'QUTE_FIFO' in environ:
@@ -178,16 +183,16 @@ class QutePopup(QDialog):
     """
     def __init__(self, message):
         super().__init__()
-        self.scroll, vbox, label = QScrollArea(), QVBoxLayout(self), QLabel(message)
+        self.area, vbox, label = QScrollArea(), QVBoxLayout(self), QLabel(message)
 
-        label.setTextFormat(Qt.MarkdownText)
-        self.scroll.setWidget(label)
-        vbox.addWidget(self.scroll)
+        label.setTextFormat(Qt.TextFormat.MarkdownText)
+        self.area.setWidget(label)
+        vbox.addWidget(self.area)
 
-        self.setWindowFlags(Qt.Popup)
+        self.setWindowFlags(Qt.WindowType.Popup)
         self.resize(500, 300)
         self.tryQuteCenter()
-        self.scroll.setFocus()
+        self.area.setFocus()
         self.exec()
 
     def tryQuteCenter(self):
@@ -224,22 +229,24 @@ class QutePopup(QDialog):
         return QRect(x, y, geom.width, geom.height)
 
     def postKeyEvent(self, key):
-        QCoreApplication.postEvent(self.scroll, QKeyEvent(QEvent.KeyPress, key, Qt.NoModifier))
+        QCoreApplication.postEvent(
+            self.area, QKeyEvent(QEvent.Type.KeyPress, key, Qt.KeyboardModifier.NoModifier)
+        )
 
     def keyPressEvent(self, event):
         key, mods = event.key(), event.modifiers()
-        if key == Qt.Key_J:
-            self.postKeyEvent(Qt.Key_Down)
-        elif key == Qt.Key_K:
-            self.postKeyEvent(Qt.Key_Up)
-        elif mods == Qt.ControlModifier and key == Qt.Key_F:
-            self.postKeyEvent(Qt.Key_PageDown)
-        elif mods == Qt.ControlModifier and key == Qt.Key_B:
-            self.postKeyEvent(Qt.Key_PageUp)
-        elif key == Qt.Key_H:
-            self.postKeyEvent(Qt.Key_Left)
-        elif key == Qt.Key_L:
-            self.postKeyEvent(Qt.Key_Right)
+        if key == Qt.Key.Key_J:
+            self.postKeyEvent(Qt.Key.Key_Down)
+        elif key == Qt.Key.Key_K:
+            self.postKeyEvent(Qt.Key.Key_Up)
+        elif mods == Qt.KeyboardModifier.ControlModifier and key == Qt.Key.Key_F:
+            self.postKeyEvent(Qt.Key.Key_PageDown)
+        elif mods == Qt.KeyboardModifier.ControlModifier and key == Qt.Key.Key_B:
+            self.postKeyEvent(Qt.Key.Key_PageUp)
+        elif key == Qt.Key.Key_H:
+            self.postKeyEvent(Qt.Key.Key_Left)
+        elif key == Qt.Key.Key_L:
+            self.postKeyEvent(Qt.Key.Key_Right)
         super().keyPressEvent(event)
 
 if __name__ == "__main__":

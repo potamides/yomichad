@@ -19,9 +19,9 @@ third-party libraries, so make sure they are installed:
 * [jamdict](https://pypi.org/project/jamdict),
   [jamdict-data](https://pypi.org/project/jamdict-data): Required for querying
   different Japanese language resources.
-* [PyQt5](https://pypi.org/project/PyQt5): Used to create the pop-up dictionary
-  UI. This should already be shipped with qutebrowser and is only listed here
-  for completeness.
+* [PyQt5](https://pypi.org/project/PyQt5)/[PyQt6](https://pypi.org/project/PyQt6):
+  Used to create the pop-up dictionary UI. This should already be shipped with
+  qutebrowser and is only listed here for completeness.
 * [python-xlib](https://pypi.org/project/python-xlib) (optional): When this is
   installed, yomichad tries to center the pop-up dictionary in the qutebrowser
   window. This uses low-level X11 hacks, so if you experience bugs, please open
