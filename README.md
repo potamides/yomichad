@@ -37,6 +37,26 @@ for mode in ["normal", "caret"]:
     config.bind('gs', 'spawn --userscript yomichad', mode=mode)
     config.bind('gS', 'spawn --userscript yomichad --prefix-search', mode=mode)
 ```
+<details>
+<summary>For Hyprland users</summary>
+For the popup page to work as an actual popup, and not be added to your tile, make sure this is somewhere in your hyprland.lua.
+
+`~/.config/hypr/hyprland.lua`:
+
+```lua
+hl.window_rule({
+  name = "qutebrowser-userscript-popup",
+  match = {
+    title = "^qutebrowser-userscript-popup$",
+  },
+
+  float = true,
+  center = true,
+  stay_focused = true,
+})
+```
+
+</details>
 Yomichad uses selected text as a query, so make sure to select the phrase you
 want to look up (e.g. in `caret` mode or using the mouse) before you run this
 script! The following flags can be used to customize yomichad to your workflow:

@@ -31,9 +31,12 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from collections import defaultdict
 from functools import cached_property
 from itertools import zip_longest
+import os
 from os import environ
 from shlex import quote
 from sys import argv
+from enum import Enum, auto
+
 
 try:
     from PyQt6.QtCore import QCoreApplication, QEvent, QRect, Qt
@@ -64,6 +67,22 @@ except ImportError as e:
     raise e
 
 
+class DesktopEnvironment(Enum):
+    KDE_PLASMA = auto()
+    HYPRLAND = auto()
+    OTHER = auto()
+
+def detect_desktop_environment():
+    desktop_env = os.environ.get("XDG_CURRENT_DESKTOP", "").upper()
+    
+    if "KDE" in desktop_env:
+        return DesktopEnvironment.KDE_PLASMA
+    elif "HYPRLAND" in desktop_env:
+        return DesktopEnvironment.HYPRLAND
+    else:
+        return DesktopEnvironment.OTHER
+
+current_desktop_environment = detect_desktop_environment()
 
 class MdDocument():
     """
@@ -189,9 +208,20 @@ class QutePopup(QDialog):
         self.area.setWidget(label)
         vbox.addWidget(self.area)
 
-        self.setWindowFlags(Qt.WindowType.Popup)
-        self.resize(500, 300)
-        self.tryQuteCenter()
+        onHyprland = current_desktop_environment == DesktopEnvironment.HYPRLAND
+        onKdePlasmaWayland = current_desktop_environment == DesktopEnvironment.KDE_PLASMA and environ.get('XDG_SESSION_TYPE', '') == 'wayland'
+
+        if onHyprland or onKdePlasmaWayland:
+            #  Setting a unique window title so that we can do specific things to it in hyprland conf
+            self.setWindowTitle("qutebrowser-userscript-popup")
+            self.setWindowFlags(
+                Qt.WindowType.FramelessWindowHint |
+                Qt.WindowType.WindowStaysOnTopHint
+            )
+        else:
+            self.setWindowFlags(Qt.WindowType.Popup)
+            self.tryQuteCenter()
+        self.resize(500, 500)
         self.area.setFocus()
         self.exec()
 
@@ -247,6 +277,9 @@ class QutePopup(QDialog):
             self.postKeyEvent(Qt.Key.Key_Left)
         elif key == Qt.Key.Key_L:
             self.postKeyEvent(Qt.Key.Key_Right)
+        elif key == Qt.Key.Key_Q:
+            #  I like hitting Q do close things, so I added this
+            self.postKeyEvent(Qt.Key.Key_Escape)
         super().keyPressEvent(event)
 
 if __name__ == "__main__":
