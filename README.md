@@ -22,11 +22,11 @@ third-party libraries, so make sure they are installed:
 * [PyQt5](https://pypi.org/project/PyQt5)/[PyQt6](https://pypi.org/project/PyQt6):
   Used to create the pop-up dictionary UI. This should already be shipped with
   qutebrowser and is only listed here for completeness.
-* [python-xlib](https://pypi.org/project/python-xlib) (optional): When this is
-  installed, yomichad tries to center the pop-up dictionary in the qutebrowser
-  window. This uses low-level X11 hacks, so if you experience bugs, please open
-  an [issue](https://github.com/potamides/yomichad/issues). If this is not
-  installed, the popup dictionary is simply centered on the screen.
+* [python-xlib](https://pypi.org/project/python-xlib) (optional; X11 only):
+  When this is installed, yomichad tries to center the pop-up dictionary in the
+  qutebrowser window. This uses low-level X11 hacks, so if you experience bugs,
+  please open an [issue](https://github.com/potamides/yomichad/issues). If this
+  is not installed, the popup dictionary is simply centered on the screen.
 
 ## Usage
 First, some keybindings should be configured for launching yomichad from

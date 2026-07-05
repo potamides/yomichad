@@ -36,11 +36,11 @@ from shlex import quote
 from sys import argv
 
 try:
-    from PyQt6.QtCore import QCoreApplication, QEvent, QRect, Qt
+    from PyQt6.QtCore import QCoreApplication, QEvent, QRect, Qt, QTimer
     from PyQt6.QtGui import QKeyEvent
     from PyQt6.QtWidgets import QApplication, QDialog, QLabel, QScrollArea, QVBoxLayout
 except ImportError:
-    from PyQt5.QtCore import QCoreApplication, QEvent, QRect, Qt
+    from PyQt5.QtCore import QCoreApplication, QEvent, QRect, Qt, QTimer
     from PyQt5.QtGui import QKeyEvent
     from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QScrollArea, QVBoxLayout
 
@@ -189,9 +189,17 @@ class QutePopup(QDialog):
         self.area.setWidget(label)
         vbox.addWidget(self.area)
 
-        self.setWindowFlags(Qt.WindowType.Popup)
-        self.resize(500, 300)
-        self.tryQuteCenter()
+        if QApplication.platformName() == "wayland":
+            # can't create popups without transient parents on wayland
+            self.area.setFixedSize(500, 300)
+            vbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+            self.showFullScreen()
+        else:
+            self.setWindowFlags(Qt.WindowType.Popup)
+            self.resize(500, 300)
+            self.tryQuteCenter()
+
         self.area.setFocus()
         self.exec()
 
@@ -263,6 +271,7 @@ if __name__ == "__main__":
         message = str(JapDictSearch(query, args.kanji, args.names, args.prefix_search).info)
         if message:
             app = QApplication(argv)
+            app.setDesktopFileName("yomichad")
             QutePopup(message)
         else:
             qute_notify("No results found for query!", level="info")
