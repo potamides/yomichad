@@ -28,6 +28,12 @@ third-party libraries, so make sure they are installed:
   please open an [issue](https://github.com/potamides/yomichad/issues). If this
   is not installed, the popup dictionary is simply centered on the screen.
 
+> [!NOTE]
+> On Wayland clients cannot position themselves, so the pop-up appears wherever
+> your compositor places it. It requests a fixed size to be floated rather than
+> tiled. To adjust its placement, add a window rule to your compositor matching
+> an `app_id` of `yomichad`.
+
 ## Usage
 First, some keybindings should be configured for launching yomichad from
 qutebrowser. You can, for example, add the following lines to your

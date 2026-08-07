@@ -36,11 +36,11 @@ from shlex import quote
 from sys import argv
 
 try:
-    from PyQt6.QtCore import QCoreApplication, QEvent, QRect, Qt, QTimer
+    from PyQt6.QtCore import QCoreApplication, QEvent, QRect, Qt
     from PyQt6.QtGui import QKeyEvent
     from PyQt6.QtWidgets import QApplication, QDialog, QLabel, QScrollArea, QVBoxLayout
 except ImportError:
-    from PyQt5.QtCore import QCoreApplication, QEvent, QRect, Qt, QTimer
+    from PyQt5.QtCore import QCoreApplication, QEvent, QRect, Qt
     from PyQt5.QtGui import QKeyEvent
     from PyQt5.QtWidgets import QApplication, QDialog, QLabel, QScrollArea, QVBoxLayout
 
@@ -191,10 +191,7 @@ class QutePopup(QDialog):
 
         if QApplication.platformName() == "wayland":
             # can't create popups without transient parents on wayland
-            self.area.setFixedSize(500, 300)
-            vbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-            self.showFullScreen()
+            self.setFixedSize(500, 300)
         else:
             self.setWindowFlags(Qt.WindowType.Popup)
             self.resize(500, 300)
