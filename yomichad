@@ -189,9 +189,14 @@ class QutePopup(QDialog):
         self.area.setWidget(label)
         vbox.addWidget(self.area)
 
-        self.setWindowFlags(Qt.WindowType.Popup)
-        self.resize(500, 300)
-        self.tryQuteCenter()
+        if QApplication.platformName() == "wayland":
+            # can't create popups without transient parents on wayland
+            self.setFixedSize(500, 300)
+        else:
+            self.setWindowFlags(Qt.WindowType.Popup)
+            self.resize(500, 300)
+            self.tryQuteCenter()
+
         self.area.setFocus()
         self.exec()
 
@@ -263,6 +268,7 @@ if __name__ == "__main__":
         message = str(JapDictSearch(query, args.kanji, args.names, args.prefix_search).info)
         if message:
             app = QApplication(argv)
+            app.setDesktopFileName("yomichad")
             QutePopup(message)
         else:
             qute_notify("No results found for query!", level="info")
